@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spotify Pulse — Live News Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #121212;
+      --surface:   #1E1E1E;
+      --surface2:  #282828;
+      --green:     #1DB954;
+      --green-h:   #1ed760;
+      --white:     #FFFFFF;
+      --muted:     #B3B3B3;
+      --border:    #333333;
+      --radius:    12px;
+      --transition: 0.18s ease;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--white);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    a { color: var(--green); text-decoration: none; }
+    a:hover { color: var(--green-h); }
+
+    /* ── Scrollbar ────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+    /* ── Keyframes ────────────────────────────────────────────────── */
+    @keyframes shimmer {
+      0%   { background-position: -700px 0; }
+      100% { background-position:  700px 0; }
+    }
+
+    @keyframes fadeInModal {
+      from { opacity: 0; transform: translateY(20px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(1.4); }
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes tabUnderline {
+      from { width: 0; }
+      to   { width: 100%; }
+    }
+
+    /* ── Header ───────────────────────────────────────────────────── */
+    #header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      border-bottom: 2px solid var(--green);
+      padding: 0 32px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      width: 38px;
+      height: 38px;
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--white);
+      letter-spacing: -0.3px;
+      white-space: nowrap;
+    }
+
+    .logo-text span { color: var(--green); }
+
+    /* Search bar */
+    .search-wrap {
+      flex: 1;
+      max-width: 560px;
+      position: relative;
+    }
+
+    .search-wrap svg.search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    #search-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 24px;
+      color: var(--white);
+      font-family: inherit;
+      font-size: 14px;
+      padding: 10px 44px 10px 42px;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    #search-input::placeholder { color: var(--muted); }
+
+    #search-input:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.15);
+    }
+
+    .search-enter-hint {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+
+    #search-input:focus ~ .search-enter-hint { opacity: 1; }
+
+    /* Header right */
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+
+    #last-updated {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    #refresh-btn {
+      background: var(--green);
+      color: #000;
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 700;
+      transition: background var(--transition), transform var(--transition);
+      flex-shrink: 0;
+    }
+
+    #refresh-btn:hover { background: var(--green-h); transform: rotate(180deg); }
+    #refresh-btn.spinning { animation: spin 0.7s linear; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Digest Banner ────────────────────────────────────────────── */
+    #digest-banner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: rgba(29, 185, 84, 0.08);
+      border-bottom: 1px solid rgba(29, 185, 84, 0.25);
+      padding: 9px 32px;
+      cursor: pointer;
+      transition: background var(--transition);
+      user-select: none;
+    }
+
+    #digest-banner:hover { background: rgba(29, 185, 84, 0.14); }
+
+    .digest-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse-dot 1.6s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    .digest-banner-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--green);
+      letter-spacing: 0.2px;
+    }
+
+    .digest-banner-caret {
+      font-size: 13px;
+      color: var(--green);
+      margin-left: 2px;
+    }
+
+    /* ── Tab Navigation ───────────────────────────────────────────── */
+    #tab-nav {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 0 32px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+
+    #tab-nav::-webkit-scrollbar { height: 0; }
+
+    .tab-btn {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 16px 20px 14px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color var(--transition);
+      border-bottom: 3px solid transparent;
+      margin-bottom: -1px;
+    }
+
+    .tab-btn:hover { color: var(--white); }
+
+    .tab-btn.active {
+      color: var(--white);
+      border-bottom-color: var(--green);
+    }
+
+    .tab-badge {
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .tab-btn.active .tab-badge {
+      background: var(--green);
+      color: #000;
+    }
+
+    /* ── Main Content ─────────────────────────────────────────────── */
+    #main {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px 32px 64px;
+    }
+
+    /* Q&A Results Panel */
+    #qa-panel {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      animation: slideDown 0.2s ease;
+    }
+
+    #qa-panel.visible { display: block; }
+
+    .qa-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .qa-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--white);
+    }
+
+    .qa-title span {
+      color: var(--green);
+    }
+
+    .qa-count {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    #qa-close {
+      background: var(--surface2);
+      border: none;
+      color: var(--muted);
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--transition), color var(--transition);
+      flex-shrink: 0;
+    }
+
+    #qa-close:hover { background: var(--border); color: var(--white); }
+
+    #qa-cards {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    /* Section Wrappers */
+    .section-wrapper { display: none; }
+    .section-wrapper.active { display: block; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--white);
+    }
+
+    .section-subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .section-divider {
+      width: 3px;
+      height: 22px;
+      background: var(--green);
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* Cards Grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    /* ── News Card ────────────────────────────────────────────────── */
+    .news-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+      cursor: pointer;
+    }
+
+    .news-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+      border-color: rgba(29, 185, 84, 0.35);
+    }
+
+    .card-thumb {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      display: block;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      flex-shrink: 0;
+    }
+
+    .card-thumb-fallback {
+      width: 100%;
+      aspect-ratio: 16/9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .card-thumb-fallback svg {
+      width: 48px;
+      height: 48px;
+      opacity: 0.25;
+    }
+
+    .card-body {
+      padding: 14px 16px 16px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .card-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .source-badge {
+      background: var(--green);
+      color: #000;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 20px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .category-chip {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .category-chip.music  { background: rgba(255,107,107,0.15); color: #ff9a9a; }
+    .category-chip.tech   { background: rgba(107,166,255,0.15); color: #9ac0ff; }
+    .category-chip.pop    { background: rgba(255,200,107,0.15); color: #ffd97a; }
+    .category-chip.today  { background: rgba(29,185,84,0.15);   color: var(--green); }
+
+    .card-date {
+      font-size: 11px;
+      color: var(--muted);
+      margin-left: auto;
+    }
+
+    .card-headline {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1.4;
+      margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.55;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      flex: 1;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .card-read-more {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--green);
+      transition: color var(--transition), gap var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .card-read-more:hover { color: var(--green-h); gap: 7px; }
+
+    .card-highlight {
+      background: rgba(29, 185, 84, 0.2);
+      color: var(--green);
+      border-radius: 3px;
+      padding: 0 2px;
+    }
+
+    /* ── Loading Skeleton ─────────────────────────────────────────── */
+    .skeleton-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .skeleton {
+      background: linear-gradient(
+        90deg,
+        var(--surface2) 25%,
+        #303030 37%,
+        var(--surface2) 63%
+      );
+      background-size: 700px 100%;
+      animation: shimmer 1.4s infinite linear;
+      border-radius: 4px;
+    }
+
+    .sk-thumb  { height: 160px; border-radius: 0; }
+    .sk-body   { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+    .sk-badge  { height: 18px; width: 72px; border-radius: 20px; }
+    .sk-title  { height: 16px; width: 90%; }
+    .sk-title2 { height: 16px; width: 70%; }
+    .sk-desc   { height: 12px; width: 100%; }
+    .sk-desc2  { height: 12px; width: 85%; }
+    .sk-desc3  { height: 12px; width: 55%; }
+
+    /* ── Daily Digest Modal ───────────────────────────────────────── */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    #modal-overlay.visible { display: flex; }
+
+    #digest-modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      width: 100%;
+      max-width: 680px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      animation: fadeInModal 0.25s ease;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 24px 28px 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .modal-header-text {}
+
+    .modal-greeting {
+      font-size: 13px;
+      color: var(--green);
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .modal-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--white);
+      line-height: 1.3;
+    }
+
+    .modal-date {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    #modal-close {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--transition), color var(--transition);
+      flex-shrink: 0;
+      margin-left: 16px;
+    }
+
+    #modal-close:hover { background: var(--border); color: var(--white); }
+
+    .modal-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 18px 28px 0;
+      flex-shrink: 0;
+    }
+
+    #modal-list {
+      overflow-y: auto;
+      flex: 1;
+      padding: 16px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .digest-item {
+      display: flex;
+      gap: 14px;
+      padding: 14px;
+      background: var(--surface2);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      transition: border-color var(--transition);
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .digest-item:hover { border-color: rgba(29, 185, 84, 0.4); }
+
+    .digest-number {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--border);
+      min-width: 28px;
+      line-height: 1;
+      padding-top: 2px;
+    }
+
+    .digest-content { flex: 1; }
+
+    .digest-item-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .digest-headline {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1.4;
+      margin-bottom: 4px;
+    }
+
+    .digest-summary {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .modal-footer {
+      padding: 16px 28px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .modal-footer-note {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    #modal-explore-btn {
+      background: var(--green);
+      color: #000;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 10px 24px;
+      border: none;
+      border-radius: 24px;
+      cursor: pointer;
+      transition: background var(--transition), transform var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #modal-explore-btn:hover { background: var(--green-h); transform: scale(1.03); }
+
+    /* ── Empty State ──────────────────────────────────────────────── */
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 64px 24px;
+      color: var(--muted);
+    }
+
+    .empty-state svg {
+      width: 56px;
+      height: 56px;
+      opacity: 0.3;
+      margin-bottom: 16px;
+    }
+
+    .empty-state p {
+      font-size: 15px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    .empty-state span {
+      font-size: 13px;
+    }
+
+    /* ── Footer ───────────────────────────────────────────────────── */
+    #site-footer {
+      text-align: center;
+      padding: 20px 32px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: #555;
+      line-height: 1.6;
+    }
+
+    #site-footer strong { color: var(--muted); }
+
+    /* ── Error Toast ──────────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-size: 13px;
+      color: var(--white);
+      max-width: 340px;
+      z-index: 600;
+      display: none;
+      animation: slideDown 0.2s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    #toast.visible { display: block; }
+    #toast.error   { border-color: #e05260; }
+    #toast.success { border-color: var(--green); }
+
+    /* ── Utility ──────────────────────────────────────────────────── */
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ─────────────────────────────────────────────────── -->
+  <header id="header">
+    <a class="logo-area" href="#" aria-label="Spotify Pulse Home">
+      <svg class="logo-icon" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="19" cy="19" r="19" fill="#1DB954"/>
+        <path d="M26.5 24.3c-.3 0-.5-.1-.7-.2-3.5-2.1-7.9-2.6-13.1-1.4-.3.1-.6-.1-.7-.4-.1-.3.1-.6.4-.7 5.6-1.3 10.4-.7 14.3 1.6.3.2.4.5.2.8-.1.2-.3.3-.4.3z" fill="#000"/>
+        <path d="M28.3 20.7c-.4 0-.6-.1-.8-.3-4-2.4-10.1-3.1-14.8-1.7-.4.1-.8-.1-.9-.5-.1-.4.1-.8.5-.9 5.4-1.6 12-.8 16.5 1.9.3.2.4.6.2.9-.2.4-.5.6-.7.6z" fill="#000"/>
+        <path d="M28.6 17c-4.8-2.8-12.7-3.1-17.3-1.7-.5.1-1-.2-1.1-.7-.1-.5.2-1 .7-1.1 5.2-1.6 13.8-1.3 19.3 2 .4.3.6.8.3 1.2-.2.5-.7.6-1.1.6-.4-.1-.7-.2-.8-.3z" fill="#000"/>
+      </svg>
+      <span class="logo-text">Spotify<span> Pulse</span></span>
+    </a>
+
+    <div class="search-wrap">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input
+        id="search-input"
+        type="text"
+        placeholder="Ask anything about Spotify news…"
+        aria-label="Search or ask a question about Spotify news"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <span class="search-enter-hint">Enter ↵</span>
+    </div>
+
+    <div class="header-right">
+      <span id="last-updated" aria-live="polite">Fetching news…</span>
+      <button id="refresh-btn" aria-label="Refresh news">↻</button>
+    </div>
+  </header>
+
+  <!-- ── Daily Digest Banner ─────────────────────────────────────── -->
+  <div id="digest-banner" role="button" tabindex="0" aria-label="Open today's daily digest">
+    <span class="digest-dot" aria-hidden="true"></span>
+    <span class="digest-banner-text">📰 Today's Digest ready — click to view</span>
+    <span class="digest-banner-caret" aria-hidden="true">›</span>
+  </div>
+
+  <!-- ── Tab Navigation ─────────────────────────────────────────── -->
+  <nav id="tab-nav" role="tablist" aria-label="News categories">
+    <button class="tab-btn active" data-tab="today" role="tab" aria-selected="true" aria-controls="section-today">
+      Today
+      <span class="tab-badge" id="badge-today">—</span>
+    </button>
+    <button class="tab-btn" data-tab="music" role="tab" aria-selected="false" aria-controls="section-music">
+      Music Industry
+      <span class="tab-badge" id="badge-music">—</span>
+    </button>
+    <button class="tab-btn" data-tab="tech" role="tab" aria-selected="false" aria-controls="section-tech">
+      Tech &amp; AI
+      <span class="tab-badge" id="badge-tech">—</span>
+    </button>
+    <button class="tab-btn" data-tab="pop" role="tab" aria-selected="false" aria-controls="section-pop">
+      Pop Culture
+      <span class="tab-badge" id="badge-pop">—</span>
+    </button>
+    <button class="tab-btn" data-tab="all" role="tab" aria-selected="false" aria-controls="section-all">
+      All News
+      <span class="tab-badge" id="badge-all">—</span>
+    </button>
+  </nav>
+
+  <!-- ── Main ───────────────────────────────────────────────────── -->
+  <main id="main" role="main">
+
+    <!-- Q&A Results Panel -->
+    <section id="qa-panel" aria-label="Search results" aria-live="polite">
+      <div class="qa-header">
+        <div>
+          <div class="qa-title">Results for: "<span id="qa-query-label"></span>"</div>
+          <div class="qa-count" id="qa-count-label"></div>
+        </div>
+        <button id="qa-close" aria-label="Close search results">✕</button>
+      </div>
+      <div id="qa-cards" class="cards-grid"></div>
+    </section>
+
+    <!-- Today Section -->
+    <section id="section-today" class="section-wrapper active" role="tabpanel" aria-labelledby="tab-today">
+      <div class="section-header">
+        <div class="section-divider" aria-hidden="true"></div>
+        <div>
+          <div class="section-title">Today's Top Stories</div>
+          <div class="section-subtitle">The most relevant Spotify news from the past 24 hours</div>
+        </div>
+      </div>
+      <div class="cards-grid" id="cards-today"></div>
+    </section>
+
+    <!-- Music Industry Section -->
+    <section id="section-music" class="section-wrapper" role="tabpanel" aria-labelledby="tab-music">
+      <div class="section-header">
+        <div class="section-divider" aria-hidden="true"></div>
+        <div>
+          <div class="section-title">Music Industry</div>
+          <div class="section-subtitle">Charts, deals, artists, and the business of music</div>
+        </div>
+      </div>
+      <div class="cards-grid" id="cards-music"></div>
+    </section>
+
+    <!-- Tech & AI Section -->
+    <section id="section-tech" class="section-wrapper" role="tabpanel" aria-labelledby="tab-tech">
+      <div class="section-header">
+        <div class="section-divider" aria-hidden="true"></div>
+        <div>
+          <div class="section-title">Tech &amp; AI</div>
+          <div class="section-subtitle">Streaming tech, AI in music, platform updates &amp; innovation</div>
+        </div>
+      </div>
+      <div class="cards-grid" id="cards-tech"></div>
+    </section>
+
+    <!-- Pop Culture Section -->
+    <section id="section-pop" class="section-wrapper" role="tabpanel" aria-labelledby="tab-pop">
+      <div class="section-header">
+        <div class="section-divider" aria-hidden="true"></div>
+        <div>
+          <div class="section-title">Pop Culture</div>
+          <div class="section-subtitle">Artists, trends, viral moments &amp; entertainment crossovers</div>
+        </div>
+      </div>
+      <div class="cards-grid" id="cards-pop"></div>
+    </section>
+
+    <!-- All News Section -->
+    <section id="section-all" class="section-wrapper" role="tabpanel" aria-labelledby="tab-all">
+      <div class="section-header">
+        <div class="section-divider" aria-hidden="true"></div>
+        <div>
+          <div class="section-title">All News</div>
+          <div class="section-subtitle">Every Spotify-related story, newest first</div>
+        </div>
+      </div>
+      <div class="cards-grid" id="cards-all"></div>
+    </section>
+
+  </main>
+
+  <!-- ── Footer ─────────────────────────────────────────────────── -->
+  <footer id="site-footer">
+    <strong>Sources:</strong> Spotify Newsroom &middot; Billboard &middot; TechCrunch &middot; The Verge &middot; Rolling Stone &middot; Variety &middot; Pitchfork &middot; Music Business Worldwide
+    <br/>Data fetched via RSS feeds. Updates daily. Not affiliated with Spotify AB.
+  </footer>
+
+  <!-- ── Daily Digest Modal ─────────────────────────────────────── -->
+  <div id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div id="digest-modal">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <div class="modal-greeting" id="modal-greeting">Good morning</div>
+          <div class="modal-title" id="modal-title">Here's your Spotify Pulse</div>
+          <div class="modal-date" id="modal-date"></div>
+        </div>
+        <button id="modal-close" aria-label="Close daily digest">✕</button>
+      </div>
+      <div class="modal-divider" aria-hidden="true"></div>
+      <div id="modal-list" aria-label="Daily digest stories"></div>
+      <div class="modal-footer">
+        <span class="modal-footer-note">Tap a story to read the full article</span>
+        <button id="modal-explore-btn">Explore Dashboard →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Error Toast ─────────────────────────────────────────────── -->
+  <div id="toast" role="alert" aria-live="assertive"></div>
+
+  <!-- ── Scripts (populated by engines) ────────────────────────── -->
+  <script id="news-engine"></script>
+  <script id="ui-engine"></script>
+
+</body>
+</html>
