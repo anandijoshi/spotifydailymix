@@ -90,6 +90,42 @@ const SOURCES = [
     siteUrl: 'https://www.nme.com',
     category: 'pop',
   },
+  // Rising artists & local music
+  {
+    url: 'https://pigeonsandplanes.com/feed',
+    name: 'Pigeons & Planes',
+    siteUrl: 'https://pigeonsandplanes.com',
+    category: 'rising',
+    alwaysRelevant: true,
+  },
+  {
+    url: 'https://www.stereogum.com/feed/',
+    name: 'Stereogum',
+    siteUrl: 'https://www.stereogum.com',
+    category: 'rising',
+    alwaysRelevant: true,
+  },
+  {
+    url: 'https://www.hotnewhiphop.com/rss/',
+    name: 'HotNewHipHop',
+    siteUrl: 'https://www.hotnewhiphop.com',
+    category: 'rising',
+    alwaysRelevant: true,
+  },
+  {
+    url: 'https://www.thefader.com/rss',
+    name: 'The FADER',
+    siteUrl: 'https://www.thefader.com',
+    category: 'rising',
+    alwaysRelevant: true,
+  },
+  {
+    url: 'https://consequenceofsound.net/feed',
+    name: 'Consequence of Sound',
+    siteUrl: 'https://consequenceofsound.net',
+    category: 'rising',
+    alwaysRelevant: true,
+  },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -319,5 +355,6 @@ window.NewsEngine = {
     { id: 'music',  label: 'Music Industry' },
     { id: 'tech',   label: 'Tech & AI' },
     { id: 'pop',    label: 'Pop Culture' },
+    { id: 'rising', label: 'Rising Artists' },
   ],
 };

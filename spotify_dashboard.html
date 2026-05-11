@@ -845,7 +845,10 @@
       All News <span class="tab-badge" id="badge-all">—</span>
     </button>
     <button class="tab-btn" data-tab="trends" role="tab" aria-selected="false">
-      Trends <span class="tab-badge" id="badge-trends">—</span>
+      Intelligence <span class="tab-badge" id="badge-trends">—</span>
+    </button>
+    <button class="tab-btn" data-tab="insights" role="tab" aria-selected="false">
+      Rising Artists <span class="tab-badge" id="badge-insights">—</span>
     </button>
   </nav>
 
@@ -924,22 +927,35 @@
       <div class="cards-grid" id="cards-all"></div>
     </section>
 
-    <!-- Trends Section -->
+    <!-- Intelligence / Trends Section -->
     <section id="section-trends" class="section-wrapper" role="tabpanel">
       <div class="section-header">
         <div class="section-divider" aria-hidden="true"></div>
         <div>
-          <div class="section-title">Trend Analysis</div>
-          <div class="section-subtitle">Trending topics across Music, Tech &amp; AI, and Pop Culture</div>
+          <div class="section-title">Cultural Intelligence</div>
+          <div class="section-subtitle">Predictive cultural intelligence — breakout signals, trend forecasts, streaming data</div>
         </div>
       </div>
+    </section>
+
+    <!-- Insights Intelligence Section -->
+    <section id="section-insights" class="section-wrapper" role="tabpanel">
+      <div class="section-header">
+        <div class="section-divider" aria-hidden="true"></div>
+        <div>
+          <div class="section-title">Rising Artists &amp; Local Music</div>
+          <div class="section-subtitle">Breaking artists, local scene predictions &amp; next-wave intelligence</div>
+        </div>
+      </div>
+      <div id="insights-rising-cards" class="cards-grid"></div>
+      <div id="insights-predictions" style="margin-top:24px"></div>
     </section>
 
   </main>
 
   <!-- ── Footer ───────────────────────────────────────────────────── -->
   <footer id="site-footer">
-    <strong>Sources:</strong> Spotify Newsroom &middot; Billboard &middot; TechCrunch &middot; The Verge &middot; Rolling Stone &middot; Variety &middot; Pitchfork &middot; Music Business Worldwide &middot; NME &middot; Wired &middot; Entertainment Weekly
+    <strong>Sources:</strong> Spotify Newsroom &middot; Billboard &middot; TechCrunch &middot; The Verge &middot; Rolling Stone &middot; Variety &middot; Pitchfork &middot; Music Business Worldwide &middot; NME &middot; Wired &middot; Entertainment Weekly &middot; Pigeons &amp; Planes &middot; Stereogum &middot; HotNewHipHop &middot; The FADER
     <br/>Data fetched via RSS feeds &middot; Updates daily &middot; Not affiliated with Spotify AB
   </footer>
 
@@ -990,6 +1006,11 @@
     { url: 'https://variety.com/feed/',                          name: 'Variety',                  siteUrl: 'https://variety.com',                   category: 'pop'    },
     { url: 'https://ew.com/feed/',                               name: 'Entertainment Weekly',     siteUrl: 'https://ew.com',                        category: 'pop'    },
     { url: 'https://www.nme.com/feed',                           name: 'NME',                      siteUrl: 'https://www.nme.com',                   category: 'pop'    },
+    { url: 'https://pigeonsandplanes.com/feed',         name: 'Pigeons & Planes',     siteUrl: 'https://pigeonsandplanes.com',    category: 'rising' },
+    { url: 'https://www.stereogum.com/feed/',           name: 'Stereogum',            siteUrl: 'https://www.stereogum.com',       category: 'rising' },
+    { url: 'https://www.hotnewhiphop.com/rss/',         name: 'HotNewHipHop',         siteUrl: 'https://www.hotnewhiphop.com',    category: 'rising' },
+    { url: 'https://www.thefader.com/rss',              name: 'The FADER',            siteUrl: 'https://www.thefader.com',        category: 'rising' },
+    { url: 'https://consequenceofsound.net/feed',       name: 'Consequence of Sound', siteUrl: 'https://consequenceofsound.net',  category: 'rising' },
   ];
 
   const stripHtml = (s) => (s || '').replace(/<[^>]*>/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
@@ -1275,6 +1296,9 @@
     if (name === 'trends' && window.TrendUI) {
       window.TrendUI.renderTrendTab(_allArticles);
     }
+    if (name === 'insights') {
+      _renderInsightsTab();
+    }
   }
 
   function initTabs() {
@@ -1447,11 +1471,12 @@
     renderCards('cards-all',   _allArticles);
 
     updateBadges({
-      today: todayItems.length || Math.min(_allArticles.length, 12),
-      music: (data.music || []).length,
-      tech:  (data.tech  || []).length,
-      pop:   (data.pop   || []).length,
-      all:   _allArticles.length,
+      today:   todayItems.length || Math.min(_allArticles.length, 12),
+      music:   (data.music || []).length,
+      tech:    (data.tech  || []).length,
+      pop:     (data.pop   || []).length,
+      all:     _allArticles.length,
+      insights: _allArticles.filter(a => a.category === 'rising').length,
     });
 
     const lu = document.getElementById('last-updated');
@@ -1460,6 +1485,44 @@
     // Refresh trend tab if it's currently active
     const activeTrends = document.querySelector('[data-tab="trends"].active');
     if (activeTrends && window.TrendUI) window.TrendUI.renderTrendTab(_allArticles);
+  }
+
+  // ── Insights Tab ─────────────────────────────────────────────────────
+
+  function _renderInsightsTab() {
+    const risingArticles = _allArticles.filter(a => a.category === 'rising');
+
+    const cardsEl = document.getElementById('insights-rising-cards');
+    if (cardsEl) {
+      cardsEl.innerHTML = risingArticles.length
+        ? risingArticles.slice(0, 20).map(a => renderCard(a)).join('')
+        : '<p style="color:var(--muted);padding:24px 0">Loading rising artists feed…</p>';
+    }
+
+    const predEl = document.getElementById('insights-predictions');
+    if (predEl && window.TrendEngine && _allArticles.length) {
+      const data = window.TrendEngine.analyze(_allArticles, '7d');
+      const rising = (data.risingTerms || []).slice(0, 6);
+      if (rising.length) {
+        predEl.innerHTML = `
+          <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:10px">
+            Local &amp; Rising Predictions
+            <span style="flex:1;height:1px;background:var(--border)"></span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+            ${rising.map(t => `
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px">
+                <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">${t.forecastLabel || 'Emerging'}</div>
+                <div style="font-size:15px;font-weight:800;color:var(--white);text-transform:capitalize;margin-bottom:8px">${t.term}</div>
+                <div style="font-size:11px;color:var(--muted);line-height:1.5">${t.narrative ? t.narrative.slice(0, 120) + '…' : 'Rising signal detected.'}</div>
+                <div style="margin-top:8px;font-size:10px;color:var(--green);font-weight:700">${Math.round((t.velocity || 0) * 100)}% velocity</div>
+              </div>
+            `).join('')}
+          </div>`;
+      } else {
+        predEl.innerHTML = '';
+      }
+    }
   }
 
   // ── Init ─────────────────────────────────────────────────────────────
