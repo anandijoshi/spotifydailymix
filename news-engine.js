@@ -126,6 +126,14 @@ const SOURCES = [
     category: 'rising',
     alwaysRelevant: true,
   },
+  // LinkedIn News — official LinkedIn blog; covers business, professional, and industry topics
+  {
+    url: 'https://blog.linkedin.com/feed/',
+    name: 'LinkedIn News',
+    siteUrl: 'https://blog.linkedin.com',
+    category: 'linkedin',
+    alwaysRelevant: true,
+  },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -350,11 +358,12 @@ window.NewsEngine = {
 
   /** Expose category list for UI tabs */
   CATEGORIES: [
-    { id: 'all',    label: 'All News' },
-    { id: 'spotify', label: 'Spotify HQ' },
-    { id: 'music',  label: 'Music Industry' },
-    { id: 'tech',   label: 'Tech & AI' },
-    { id: 'pop',    label: 'Pop Culture' },
-    { id: 'rising', label: 'Rising Artists' },
+    { id: 'all',      label: 'All News' },
+    { id: 'spotify',  label: 'Spotify HQ' },
+    { id: 'music',    label: 'Music Industry' },
+    { id: 'tech',     label: 'Tech & AI' },
+    { id: 'pop',      label: 'Pop Culture' },
+    { id: 'rising',   label: 'Rising Artists' },
+    { id: 'linkedin', label: 'LinkedIn News' },
   ],
 };

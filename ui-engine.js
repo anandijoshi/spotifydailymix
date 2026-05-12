@@ -55,10 +55,11 @@ const UIEngine = (() => {
   // ─── Category config ─────────────────────────────────────────────────────────
 
   const CATEGORY_CONFIG = {
-    music: { label: 'Music Industry', color: '#1DB954', gradient: 'linear-gradient(135deg, #6B2FA0, #1DB954)' },
-    tech:  { label: 'Tech & AI',      color: '#4687D6', gradient: 'linear-gradient(135deg, #0D3B8C, #1DB954)' },
-    pop:   { label: 'Pop Culture',    color: '#E91E8C', gradient: 'linear-gradient(135deg, #E91E8C, #FF6B35)' },
-    spotify: { label: 'Spotify',      color: '#1DB954', gradient: 'linear-gradient(135deg, #1DB954, #191414)' },
+    music:    { label: 'Music Industry', color: '#1DB954', gradient: 'linear-gradient(135deg, #6B2FA0, #1DB954)' },
+    tech:     { label: 'Tech & AI',      color: '#4687D6', gradient: 'linear-gradient(135deg, #0D3B8C, #1DB954)' },
+    pop:      { label: 'Pop Culture',    color: '#E91E8C', gradient: 'linear-gradient(135deg, #E91E8C, #FF6B35)' },
+    spotify:  { label: 'Spotify',        color: '#1DB954', gradient: 'linear-gradient(135deg, #1DB954, #191414)' },
+    linkedin: { label: 'LinkedIn News',  color: '#0A66C2', gradient: 'linear-gradient(135deg, #004182, #0A66C2)' },
   };
 
   function categoryConfig(cat) {
@@ -83,7 +84,7 @@ const UIEngine = (() => {
   }
 
   function showSkeletons() {
-    ['cards-today', 'cards-music', 'cards-tech', 'cards-pop', 'cards-all'].forEach(id => {
+    ['cards-today', 'cards-music', 'cards-tech', 'cards-pop', 'cards-linkedin', 'cards-all'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = skeletonHTML();
     });
@@ -180,14 +181,15 @@ const UIEngine = (() => {
 
   function updateTabCounts(data) {
     const counts = {
-      today: (data.all || []).filter(a => {
+      today:    (data.all || []).filter(a => {
         const d = new Date(a.pubDate);
         return (Date.now() - d) < 86400000 * 2;
       }).length,
-      music: (data.music || []).length,
-      tech:  (data.tech || []).length,
-      pop:   (data.pop || []).length,
-      all:   (data.all || []).length,
+      music:    (data.music    || []).length,
+      tech:     (data.tech     || []).length,
+      pop:      (data.pop      || []).length,
+      linkedin: (data.linkedin || []).length,
+      all:      (data.all      || []).length,
     };
     Object.entries(counts).forEach(([tab, count]) => {
       const badge = document.querySelector(`[data-tab="${tab}"] .tab-count`);
@@ -344,11 +346,12 @@ const UIEngine = (() => {
     const now = Date.now();
     const todayArticles = (data.all || []).filter(a => (now - new Date(a.pubDate)) < 86400000 * 2);
 
-    renderCards('cards-today', todayArticles.length ? todayArticles : (data.all || []).slice(0, 12));
-    renderCards('cards-music', data.music || []);
-    renderCards('cards-tech',  data.tech  || []);
-    renderCards('cards-pop',   data.pop   || []);
-    renderCards('cards-all',   data.all   || []);
+    renderCards('cards-today',    todayArticles.length ? todayArticles : (data.all || []).slice(0, 12));
+    renderCards('cards-music',    data.music    || []);
+    renderCards('cards-tech',     data.tech     || []);
+    renderCards('cards-pop',      data.pop      || []);
+    renderCards('cards-linkedin', data.linkedin || []);
+    renderCards('cards-all',      data.all      || []);
     updateTabCounts(data);
 
     const lastUpdated = document.getElementById('last-updated');
@@ -385,7 +388,7 @@ const UIEngine = (() => {
       }
     } catch (err) {
       console.error('NewsEngine.fetchAll failed:', err);
-      ['cards-today', 'cards-music', 'cards-tech', 'cards-pop', 'cards-all'].forEach(id => {
+      ['cards-today', 'cards-music', 'cards-tech', 'cards-pop', 'cards-linkedin', 'cards-all'].forEach(id => {
         renderError(id, 'Could not load news. Check your internet connection and try refreshing.');
       });
     }
